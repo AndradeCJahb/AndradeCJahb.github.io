@@ -13,7 +13,7 @@ code {
     monospace;
 }
 
-.PermHeader {
+.header {
   font: Courier;
   margin:0;
   color: rgb(255, 255, 255);
@@ -26,6 +26,19 @@ code {
   width: 100%; /* Ensure the header spans the full width */
 }
 
+.sudokuTitle {
+  font: Courier;
+  margin:0;
+  color: rgb(0, 0, 0);
+  font-size: 1.5rem;
+  text-align: left;
+  padding-left: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  width: 100%; /* Ensure the header spans the full width */
+  font-weight: 400;
+}
+
 .cell {
   width: 40px; /* Set the width of the cell */
   height: 40px; /* Set the height of the cell to match the width */
@@ -33,6 +46,16 @@ code {
   border: 1px solid #7c7c7c; /* Add a border to the cell */
   font-size: 1.5rem; /* Adjust font size for better visibility */
   outline: none;
+}
+
+.non-editable-cell {
+  width: 40px; /* Set the width of the cell */
+  height: 40px; /* Set the height of the cell to match the width */
+  text-align: center; /* Center the text inside the cell */
+  border: 1px solid #7c7c7c; /* Add a border to the cell */
+  font-size: 1.5rem; /* Adjust font size for better visibility */
+  outline: none;
+  background-color: #d2d2d2;
 }
 
 .cell:focus {
@@ -51,6 +74,57 @@ code {
   grid-template-rows: repeat(3, auto); /* Create 3 rows for the 3x3 grid */
   border: 4px solid #000000; /* Add a border around the entire grid */
   width: fit-content; /* Ensure the container only wraps its content */
-  margin: 50px auto; /* Center the grid horizontally on the page */
+  margin: 4px 20px; /* Center the grid horizontally on the page */
   box-sizing: border-box;
+}
+
+.sudokuTitle {
+  font: Courier;
+  color: rgb(0, 0, 0);
+  font-size: 1.5rem;
+  text-align: left;
+  font-weight: 400;
+}
+
+.clientInfo {
+  font: Courier;
+  margin: 10px 0px 10px 20px;
+  font-size: 1rem;
+}
+
+.playerHeader {
+  font: Courier;
+  margin: 0px 0px 0px 20px;
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.chatBox {
+  border: 1px solid #000000;
+  margin: 20px;
+  padding: 10px;
+  width: 400px; /* Set a fixed width for the chat box */
+  border-radius: 5px;
+}
+
+.chatLog {
+  height: 300px; /* Set a fixed height for the chat log */
+  overflow-y: auto; /* Enable vertical scrolling */
+  border: 1px solid #7c7c7c;
+  padding: 5px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.chatInput {
+  display: flex;
+}
+
+.chatInput input {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid #7c7c7c;
+  border-radius: 5px;
+  background-color: #e7e7e7;
+  color:#000000
 }
