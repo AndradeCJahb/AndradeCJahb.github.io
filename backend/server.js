@@ -1,4 +1,5 @@
 const WebSocket = require('ws');
+//const sqlite3 = require('sqlite3').verbose();
 
 const wss = new WebSocket.Server({ port: 8080 });
 
