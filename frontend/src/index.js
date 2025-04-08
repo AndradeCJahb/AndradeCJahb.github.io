@@ -3,7 +3,18 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 
 function Header() {
-  return <h1 className="header">Suduoku</h1>;
+  return (
+    <div className="header">
+      <div className="header-content">
+        <img 
+          src="/favicon.ico" 
+          alt="Suduoku Logo" 
+          className="header-logo" 
+        />
+        <h1 className="header-title">Suduoku</h1>
+      </div>
+    </div>
+  );
 }
 
 function Cell({ value, isEditable, onChange, isIncorrect }) {
