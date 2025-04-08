@@ -114,6 +114,28 @@ code {
   padding: 5px;
   margin-bottom: 10px;
   border-radius: 5px;
+  display: flex;
+  flex-direction: column; /* Ensure messages stack vertically */
+}
+
+.chatLog div {
+  display: flex;
+  justify-content: space-between; /* Space between message and time */
+  align-items: flex-start; /* Align items at the top */
+}
+
+.chatLog .message {
+  flex: 1; /* Allow the message to take up available space */
+  text-align: left; /* Ensure the message is left-aligned */
+  margin-left: 10px; /* Add space between message and time */
+}
+
+.chatLog .time {
+  font-size: 0.8rem;
+  color: #888;
+  margin-left: 10px;
+  text-align: right; /* Align the time to the right */
+  white-space: nowrap; /* Prevent the time from wrapping */
 }
 
 .chatInput {

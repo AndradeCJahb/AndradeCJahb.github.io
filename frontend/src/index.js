@@ -27,17 +27,23 @@ function Cell({ value, isEditable, onChange }) {
 }
 
 function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset }) {
+  // Create a transposed version of the gridData for the inner 3x3 grid
+  const transposedGridData = Array.from({ length: 3 }, (_, i) =>
+    Array.from({ length: 3 }, (_, j) => gridData[j][i])
+  );
+
   return (
     <div className="threeGrid">
-      {gridData.map((row, rowIndex) => (
+      {transposedGridData.map((row, rowIndex) => (
         <div key={rowIndex} className="grid-row">
           {row.map((cell, colIndex) => (
             <Cell
               key={colIndex}
-              value={cell.value} // Pass the value property of the cell
-              isEditable={cell.isEditable} // Pass the isEditable property of the cell
+              value={cell.value}
+              isEditable={cell.isEditable}
               onChange={(value) =>
-                onCellChange(rowOffset + rowIndex, colOffset + colIndex, value)
+                // The indices need to be swapped here for the correct mapping
+                onCellChange(rowOffset + colIndex, colOffset + rowIndex, value)
               }
             />
           ))}
@@ -46,7 +52,6 @@ function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset }) {
     </div>
   );
 }
-
 function FinalGrid({ gridData, onCellChange }) {
   return (
     <div className="finalGrid">
@@ -76,24 +81,33 @@ if (!clientId) {
   localStorage.setItem('clientId', clientId);
 }
 
-
 function App() {
   const [gridData, setGridData] = useState(
     Array(9).fill(Array(9).fill('')) // Initialize empty 9x9 grid
   );
+
   const [puzzleTitle, setPuzzleTitle] = useState(''); // State for the puzzle title
   const [clientInfo, setClientInfo] = useState({ name: '', color: '' }); // State for the client's name and color
   const [players, setPlayers] = useState([]); // State for the list of connected players
   const [chatInput, setChatInput] = useState(''); // State for the chat input box
   const [chatMessages, setChatMessages] = useState([]); // State for the list of chat messages
-
+  
+  const chatLogRef = useRef(null);
   const ws = useRef(null); // Use useRef to persist the WebSocket instance
 
   useEffect(() => {
-    ws.current = new WebSocket('https://bfaf-2601-1c2-4503-61b0-5845-f924-1122-9744.ngrok-free.app'); // Connect to the backend WebSocket server
+    // Scroll to the bottom of the chat log whenever messages are updated
+    if (chatLogRef.current) {
+      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  useEffect(() => {
+    ws.current = new WebSocket(' https://dabf-2601-1c2-4503-61b0-9d5b-8d64-ba07-e34a.ngrok-free.app'); // Connect to the backend WebSocket server
 
     ws.current.onopen = () => {
       console.log('Connected to WebSocket server');
+
       // Send the client ID to the server
       ws.current.send(JSON.stringify({ type: 'identify', clientId }));
   
@@ -103,23 +117,24 @@ function App() {
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      
       if (data.type === 'update') {
         // Update the grid with the new state from the server
-        const updatedGrid = data.board.map((row) =>
-          row.map((cell) => ({
-            value: cell.value, // Use the value property from the backend
-            isEditable: cell.isEditable, // Use the isEditable property from the backend
+        const updatedGrid = Array.from({ length: 9 }, (_, rowIndex) =>
+          Array.from({ length: 9 }, (_, colIndex) => ({
+            value: data.board[colIndex][rowIndex].value, // Swap row and column indices
+            isEditable: data.board[colIndex][rowIndex].isEditable, // Swap row and column indices
           }))
         );
-        setGridData(updatedGrid);
+    
+        setGridData(updatedGrid); // Set the grid data in row-major order
         setPuzzleTitle(data.title); // Update the puzzle title
+    
         if (data.client) {
           setClientInfo(data.client); // Set the client's name and color
         }
       } else if (data.type === 'players') {
-        setPlayers(data.players); // Update the list of connected players
-      } else if (data.type === 'chat') {
-        setChatMessages((prevMessages) => [...prevMessages, data.message]); // Add new message to chat
+        setPlayers(data.players); // Update the list of connected players 
       } else if (data.type === 'chatHistory') {
         setChatMessages(data.messages); // Load chat history
       }
@@ -140,8 +155,12 @@ function App() {
         text: chatInput,
         puzzleId: 1, // Replace with the actual puzzle ID
       };
+  
+      // Send the chat message to the server
       ws.current.send(JSON.stringify({ type: 'chat', message }));
-      setChatInput(''); // Clear the input box
+  
+      // Clear the input box after sending the message
+      setChatInput('');
     }
   };
 
@@ -153,6 +172,7 @@ function App() {
           : cell
       )
     );
+
     setGridData(newGrid);
 
     // Send the updated grid to the server
@@ -185,16 +205,21 @@ function App() {
       </div>
 
       <div className="chatBox">
-        <div className="chatLog">
-          {chatMessages.map((msg, index) => (
-          <div key={index}>
-            <strong style={{ color: msg.color || '#000' }}>{msg.user}:</strong> {msg.message}
-            <span style={{ fontSize: '0.8rem', color: '#888', marginLeft: '10px' }}>
-              {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} {/* Format the time */}
-            </span>
-          </div>
-          ))}
-        </div>
+      <div className="chatLog" ref={chatLogRef}>
+  {chatMessages.map((msg, index) => (
+    <div key={index}>
+      <strong style={{ color: msg.color || '#000' }}>{msg.user}:</strong>
+      <span className="message">{msg.message}</span>
+      <span className="time">
+        {new Date(msg.time).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })}
+      </span>
+    </div>
+  ))}
+</div>
 
         <div className="chatInput">
           <input

@@ -53,7 +53,7 @@ function getRandomPuzzle(callback) {
 
   const query = `
     SELECT id, title, sdx FROM puzzles
-    ORDER BY id DESC
+    ORDER BY id ASC 
     LIMIT 1;
   `;
 
@@ -92,7 +92,6 @@ getRandomPuzzle((puzzle) => {
     );
 
     console.log(`Loaded puzzle: ${title} (ID: ${id})`);
-    console.log('Board state:', boardState);
   } else {
     console.log('No puzzles found in the database. Using an empty board.');
   }
@@ -134,39 +133,53 @@ wss.on('connection', (ws) => {
       // Handle chat messages
       const { message: chatMessage } = data;
       const { user, text } = chatMessage;
-
+    
+      // Retrieve the user's color from the players map
+      const clientColor = players.get(ws.clientId)?.color || '#000000';
+    
       // Insert the chat message into the database
       const db = new sqlite3.Database(dbPath);
       db.run(
-        'INSERT INTO chat_logs (puzzle_id, user, message) VALUES (?, ?, ?)',
-        [puzzleId, user, text], // Use the puzzleId here
+        'INSERT INTO chat_logs (puzzle_id, user, color, message, time) VALUES (?, ?, ?, ?, ?)',
+        [puzzleId, user, clientColor, text, Date.now()], // Include the color in the database
         function (err) {
           if (err) {
             console.error('Error inserting chat message:', err.message);
           } else {
             console.log(`Chat message inserted for puzzle ${puzzleId} by ${user}`);
+    
+            // Fetch the updated chat logs
+            db.all(
+              'SELECT user, color, message, time FROM chat_logs WHERE puzzle_id = ? ORDER BY time',
+              [puzzleId],
+              (err, rows) => {
+                if (err) {
+                  console.error('Error fetching chat history:', err.message);
+                } else {
+                  // Broadcast the updated chat logs to all connected clients
+                  wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                      client.send(JSON.stringify({ type: 'chatHistory', messages: rows }));
+                    }
+                  });
+                }
+              }
+            );
           }
         }
       );
       db.close();
-
-      // Broadcast the chat message to all connected clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'chat', message: chatMessage }));
-        }
-      });
     } else if (data.type === 'loadChat') {
       // Fetch chat history for the current puzzle
       const db = new sqlite3.Database(dbPath);
       db.all(
-        'SELECT user, message, time FROM chat_logs WHERE puzzle_id = ? ORDER BY time ASC',
+        'SELECT user, color, message, time FROM chat_logs WHERE puzzle_id = ? ORDER BY time ASC',
         [puzzleId],
         (err, rows) => {
           if (err) {
             console.error('Error fetching chat history:', err.message);
           } else {
-            // Send the chat history back to the client
+            // Send the chat history back to the client, including the color
             ws.send(JSON.stringify({ type: 'chatHistory', messages: rows }));
           }
         }
