@@ -53,8 +53,7 @@ function getRandomPuzzle(callback) {
 
   const query = `
     SELECT id, title, sdx FROM puzzles
-    ORDER BY id ASC 
-    LIMIT 1;
+    where id = 2;
   `;
 
   db.get(query, (err, row) => {
@@ -71,6 +70,11 @@ function getRandomPuzzle(callback) {
 let boardState = Array(9).fill(Array(9).fill('')); // Initialize empty 9x9 board
 let puzzleTitle = ''; // Initialize puzzle title
 let puzzleId = null; // Initialize puzzle ID
+
+const gameState = {
+  incorrectCells: []
+};
+
 
 getRandomPuzzle((puzzle) => {
   if (puzzle) {
@@ -124,8 +128,19 @@ wss.on('connection', (ws) => {
           client: clientInfo,
           board: boardState,
           title: puzzleTitle,
+          puzzleId: puzzleId,
         })
       );
+      
+      // Add this to send the current incorrect cells
+      if (gameState.incorrectCells.length > 0) {
+        ws.send(
+          JSON.stringify({
+            type: 'checkResult',
+            incorrectCells: gameState.incorrectCells
+          })
+        );
+      }
 
       // Broadcast the updated player list
       broadcastPlayers();
@@ -181,6 +196,220 @@ wss.on('connection', (ws) => {
           } else {
             // Send the chat history back to the client, including the color
             ws.send(JSON.stringify({ type: 'chatHistory', messages: rows }));
+          }
+        }
+      );
+      db.close();
+    } else if (data.type === 'update') {
+      // Handle board updates
+      const { board, changedCell } = data; // Extract changedCell from the data object
+      
+      // Update the board state in memory
+      boardState = board;
+      
+      // Only process changed cell logic if changedCell exists
+      if (changedCell && gameState.incorrectCells.length > 0) {
+        const { row, col } = changedCell;
+        
+        // Remove this cell from incorrectCells if it was changed
+        gameState.incorrectCells = gameState.incorrectCells.filter(
+          cell => !(cell.row === row && cell.col === col)
+        );
+        
+        console.log(`Removed cell (${row},${col}) from incorrectCells. Remaining: ${gameState.incorrectCells.length}`);
+        
+        // Add this: Broadcast the updated incorrectCells to all clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                type: 'checkResult',
+                incorrectCells: gameState.incorrectCells
+              })
+            );
+          }
+        });
+      }
+      
+      // Save the board state to the database
+      const db = new sqlite3.Database(dbPath);
+      
+      // Convert the board to a format that can be stored in the database
+      const boardCells = [];
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          const cell = board[row][col];
+          let cellValue = cell.value;
+          if (cellValue === '') {
+            cellValue = '0';
+          } else if (!cell.isEditable) {
+            cellValue = 'u' + cellValue;
+          }
+          boardCells.push(cellValue);
+        }
+      }
+      
+      const sdx = boardCells.join(' ');
+      
+      // Update the puzzle in the database
+      db.run(
+        'UPDATE puzzles SET sdx = ? WHERE id = ?',
+        [sdx, puzzleId],
+        function (err) {
+          if (err) {
+            console.error('Error updating puzzle in database:', err.message);
+          } else {
+            console.log(`Puzzle ${puzzleId} updated in database`);
+            
+            // Broadcast the updated board to all clients
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(
+                  JSON.stringify({
+                    type: 'update',
+                    board: boardState,
+                    title: puzzleTitle,
+                    puzzleId: puzzleId,
+                  })
+                );
+                
+                // Also send the current incorrect cells state
+                if (changedCell) {
+                  client.send(
+                    JSON.stringify({
+                      type: 'checkResult',
+                      incorrectCells: gameState.incorrectCells
+                    })
+                  );
+                }
+              }
+            });
+          }
+        }
+      );
+      
+      db.close();
+    } else if (data.type === 'clearBoard') {
+      // Handle board clearing
+      const { board } = data;
+      
+      // Update the board state in memory
+      boardState = board;
+      
+      gameState.incorrectCells = [];
+
+      // Save the board state to the database
+      const db = new sqlite3.Database(dbPath);
+      
+      // Convert the board to a format that can be stored in the database
+      const boardCells = [];
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          const cell = board[row][col];
+          let cellValue = cell.value;
+          if (cellValue === '') {
+            cellValue = '0';
+          } else if (!cell.isEditable) {
+            cellValue = 'u' + cellValue;
+          }
+          boardCells.push(cellValue);
+        }
+      }
+      
+      const sdx = boardCells.join(' ');
+      
+      // Update the puzzle in the database
+      db.run(
+        'UPDATE puzzles SET sdx = ? WHERE id = ?',
+        [sdx, puzzleId],
+        function (err) {
+          if (err) {
+            console.error('Error updating puzzle in database:', err.message);
+          } else {
+            console.log(`Puzzle ${puzzleId} cleared and updated in database`);
+            
+            // Broadcast the updated board to all clients
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(
+                  JSON.stringify({
+                    type: 'update',
+                    board: boardState,
+                    title: puzzleTitle,
+                    puzzleId: puzzleId,
+                  })
+                );
+                
+                // Also send empty incorrectCells
+                client.send(
+                  JSON.stringify({
+                    type: 'checkResult',
+                    incorrectCells: []
+                  })
+                );
+              }
+            });
+          }
+        }
+      );
+
+      db.close();
+
+    } else if (data.type === 'checkSolution') {
+      // Fetch solution from the database
+      const db = new sqlite3.Database(dbPath);
+      db.get(
+        'SELECT sdx_solution FROM puzzles WHERE id = ?',
+        [puzzleId],
+        (err, row) => {
+          if (err) {
+            console.error('Error fetching solution:', err.message);
+          } else if (row && row.sdx_solution) {
+            // Parse the solution from the database
+            const solutionCells = row.sdx_solution.split(' ');
+            const solution = Array.from({ length: 9 }, (_, rowIndex) =>
+              Array.from({ length: 9 }, (_, colIndex) => {
+                const cellIndex = rowIndex * 9 + colIndex;
+                const cell = solutionCells[cellIndex];
+                // Extract the number from the solution (remove 'u' prefix if present)
+                return cell.startsWith('u') ? cell.slice(1) : cell;
+              })
+            );
+            
+            // Compare current board with solution
+            const incorrectCells = [];
+            for (let row = 0; row < 9; row++) {
+              for (let col = 0; col < 9; col++) {
+                const currentValue = boardState[row][col].value;
+                if (currentValue !== '' && currentValue !== solution[row][col]) {
+                  // Transpose the coordinates when reporting incorrect cells
+                  incorrectCells.push({ row: col, col: row });
+                }
+              }
+            }
+            
+            // Store the incorrect cells at the server level
+        gameState.incorrectCells = incorrectCells;
+        
+        // Broadcast to all clients instead of just the requesting client
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                type: 'checkResult',
+                incorrectCells: incorrectCells
+              })
+            );
+          }
+        });
+      } else {
+            console.error('Solution not found for puzzle:', puzzleId);
+            ws.send(
+              JSON.stringify({
+                type: 'checkResult',
+                error: 'Solution not available for this puzzle'
+              })
+            );
           }
         }
       );

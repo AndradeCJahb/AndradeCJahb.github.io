@@ -150,3 +150,50 @@ code {
   background-color: #e7e7e7;
   color:#000000
 }
+
+.boardControls {
+  margin: 10px 20px;
+}
+
+.clearBoardBtn {
+  background-color: #6a93cb;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clearBoardBtn:hover {
+  background-color: #5a7daf;
+}
+
+.clearBoardBtn:active {
+  background-color: #4a6793;
+}
+
+.checkSolutionBtn {
+  background-color: #6ab376; /* Green color */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-left: 10px;
+}
+
+.checkSolutionBtn:hover {
+  background-color: #5a9965;
+}
+
+.checkSolutionBtn:active {
+  background-color: #4a7d54;
+}
+
+.incorrect-cell {
+  background-color: #ffcccc !important; /* Light red for incorrect cells */
+}
