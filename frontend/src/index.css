@@ -1,141 +1,187 @@
+/* -------------------- Base Styles -------------------- */
 body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* -------------------- Layout Structure -------------------- */
+.app-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.left-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.right-section {
+  display: flex;
+  flex-direction: column;
+  margin-left: 20px;
+  margin-top: 5px;
+  width: 400px;
+}
+
+/* -------------------- Header Styles -------------------- */
 .header {
-  font: Courier;
-  margin:0;
-  color: rgb(255, 255, 255);
+  font: 'Courier', monospace;
+  margin: 0;
+  color: white;
   font-size: 1.5rem;
   text-align: left;
-  padding-left: 20px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 10px 20px;
   background-color: rgb(112, 155, 208);
-  width: 100%; /* Ensure the header spans the full width */
+  width: 100%;
 }
 
 .sudokuTitle {
-  font: Courier;
-  margin:0;
-  color: rgb(0, 0, 0);
+  font: 'Courier', monospace;
+  margin: 0;
+  color: black;
   font-size: 1.5rem;
   text-align: left;
-  padding-left: 20px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  width: 100%; /* Ensure the header spans the full width */
+  padding: 10px 20px;
   font-weight: 400;
+  width: 100%;
 }
 
-.cell {
-  width: 40px; /* Set the width of the cell */
-  height: 40px; /* Set the height of the cell to match the width */
-  text-align: center; /* Center the text inside the cell */
-  border: 1px solid #7c7c7c; /* Add a border to the cell */
-  font-size: 1.5rem; /* Adjust font size for better visibility */
-  outline: none;
-}
-
-.non-editable-cell {
-  width: 40px; /* Set the width of the cell */
-  height: 40px; /* Set the height of the cell to match the width */
-  text-align: center; /* Center the text inside the cell */
-  border: 1px solid #7c7c7c; /* Add a border to the cell */
-  font-size: 1.5rem; /* Adjust font size for better visibility */
-  outline: none;
-  background-color: #d2d2d2;
-}
-
-.cell:focus {
-  background-color: #ffdf8e; /* Highlight the cell with a light color */
-}
-
-.threeGrid {
-  display: grid;
-  border: 2px solid #7c7c7c; /* Add a border to the grid */
-  box-sizing: border-box;
+/* -------------------- Sudoku Grid Styles -------------------- */
+.board-section {
+  flex: 0 0 auto;
+  margin-bottom: 20px;
 }
 
 .finalGrid {
   display: grid;
-  grid-template-columns: repeat(3, auto); /* Create 3 columns for the 3x3 grid */
-  grid-template-rows: repeat(3, auto); /* Create 3 rows for the 3x3 grid */
-  border: 4px solid #000000; /* Add a border around the entire grid */
-  width: fit-content; /* Ensure the container only wraps its content */
-  margin: 4px 20px; /* Center the grid horizontally on the page */
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
+  border: 4px solid #000000;
+  width: fit-content;
+  margin: 4px 20px 0 20px;
   box-sizing: border-box;
 }
 
-.sudokuTitle {
-  font: Courier;
-  color: rgb(0, 0, 0);
+.threeGrid {
+  display: grid;
+  border: 2px solid #7c7c7c;
+  box-sizing: border-box;
+}
+
+.cell, .non-editable-cell {
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  border: 1px solid #7c7c7c;
   font-size: 1.5rem;
-  text-align: left;
-  font-weight: 400;
+  outline: none;
 }
 
-.clientInfo {
-  font: Courier;
-  margin: 10px 0px 10px 20px;
+.non-editable-cell {
+  background-color: #d2d2d2;
+}
+
+.cell:focus {
+  background-color: #ffdf8e;
+}
+
+.incorrect-cell {
+  background-color: #ffcccc !important;
+}
+
+/* -------------------- Control Buttons -------------------- */
+.board-controls-section {
+  margin: 0 0 0 40px;
+  display: flex;
+  justify-content: left;
+  width: 100%;
+}
+
+.clearBoardBtn, .checkSolutionBtn {
+  color: white;
+  border: none;
+  padding: 8px 16px;
   font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.playerHeader {
-  font: Courier;
-  margin: 0px 0px 0px 20px;
-  font-size: 1.2rem;
-  font-weight: 400;
+.clearBoardBtn {
+  background-color: #6a93cb;
 }
 
+.clearBoardBtn:hover {
+  background-color: #5a7daf;
+}
+
+.clearBoardBtn:active {
+  background-color: #4a6793;
+}
+
+.checkSolutionBtn {
+  background-color: #6ab376;
+  margin-left: 10px;
+}
+
+.checkSolutionBtn:hover {
+  background-color: #5a9965;
+}
+
+.checkSolutionBtn:active {
+  background-color: #4a7d54;
+}
+
+/* -------------------- Chat Styles -------------------- */
 .chatBox {
   border: 1px solid #000000;
-  margin: 20px;
   padding: 10px;
-  width: 400px; /* Set a fixed width for the chat box */
+  width: 100%;
   border-radius: 5px;
+  margin: 0;
 }
 
 .chatLog {
-  height: 300px; /* Set a fixed height for the chat log */
-  overflow-y: auto; /* Enable vertical scrolling */
+  height: 300px;
+  overflow-y: auto;
   border: 1px solid #7c7c7c;
   padding: 5px;
   margin-bottom: 10px;
   border-radius: 5px;
   display: flex;
-  flex-direction: column; /* Ensure messages stack vertically */
+  flex-direction: column;
 }
 
 .chatLog div {
   display: flex;
-  justify-content: space-between; /* Space between message and time */
-  align-items: flex-start; /* Align items at the top */
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .chatLog .message {
-  flex: 1; /* Allow the message to take up available space */
-  text-align: left; /* Ensure the message is left-aligned */
-  margin-left: 10px; /* Add space between message and time */
+  flex: 1;
+  text-align: left;
+  margin-left: 10px;
 }
 
 .chatLog .time {
   font-size: 0.8rem;
   color: #888;
   margin-left: 10px;
-  text-align: right; /* Align the time to the right */
-  white-space: nowrap; /* Prevent the time from wrapping */
+  text-align: right;
+  white-space: nowrap;
 }
 
 .chatInput {
@@ -148,52 +194,32 @@ code {
   border: 1px solid #7c7c7c;
   border-radius: 5px;
   background-color: #e7e7e7;
-  color:#000000
+  color: #000000;
 }
 
-.boardControls {
-  margin: 10px 20px;
+/* -------------------- Player Styles -------------------- */
+.players-section {
+  margin-top: 20px;
 }
 
-.clearBoardBtn {
-  background-color: #6a93cb;
-  color: white;
-  border: none;
-  padding: 8px 16px;
+.clientInfo {
+  font: 'Courier', monospace;
+  margin: 10px 0 10px 0;
   font-size: 1rem;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.clearBoardBtn:hover {
-  background-color: #5a7daf;
+.playerHeader {
+  font: 'Courier', monospace;
+  margin: 15px 0 5px 0;
+  font-size: 1.2rem;
+  font-weight: 400;
 }
 
-.clearBoardBtn:active {
-  background-color: #4a6793;
+.playerList {
+  margin-bottom: 10px;
 }
 
-.checkSolutionBtn {
-  background-color: #6ab376; /* Green color */
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  font-size: 1rem;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-left: 10px;
-}
-
-.checkSolutionBtn:hover {
-  background-color: #5a9965;
-}
-
-.checkSolutionBtn:active {
-  background-color: #4a7d54;
-}
-
-.incorrect-cell {
-  background-color: #ffcccc !important; /* Light red for incorrect cells */
+.playerList ul {
+  padding-left: 20px;
+  margin-top: 5px;
 }

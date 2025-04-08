@@ -266,83 +266,94 @@ function App() {
   };
 
 
-  return (
-    <div>
-      <div>
-        <Header />
-        <div className="sudokuTitle">{puzzleTitle}</div>
-        <FinalGrid 
-  gridData={gridData} 
-  onCellChange={handleCellChange}
-  incorrectCells={incorrectCells}
-/>
-      </div>
+  // Update the App component's return statement
 
-      <div className="clientInfo">
-        <span>You are:</span>
-        <span style={{ color: clientInfo.color }}> {clientInfo.name}</span>
-      </div>
-
-      <h3 className="playerHeader">Connected Players:</h3>
-
-      <div className="playerList">
-        <ul>
-          {players.map((player, index) => (
-            <li key={index} style={{ color: player.color }}>
-              {player.name}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="chatBox">
-      <div className="chatLog" ref={chatLogRef}>
-  {chatMessages.map((msg, index) => (
-    <div key={index}>
-      <strong style={{ color: msg.color || '#000' }}>{msg.user}:</strong>
-      <span className="message">{msg.message}</span>
-      <span className="time">
-        {new Date(msg.time).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        })}
-      </span>
-    </div>
-  ))}
-</div>
-
-        <div className="chatInput">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                sendChatMessage(); // Trigger the sendChatMessage function on Enter
-              }
-            }}
-            placeholder="Type to chat"
+return (
+  <div>
+    <Header />
+    <div className="sudokuTitle">{puzzleTitle}</div>
+    
+    <div className="app-container">
+      <div className="left-section">
+        <div className="board-section">
+          <FinalGrid 
+            gridData={gridData} 
+            onCellChange={handleCellChange}
+            incorrectCells={incorrectCells}
           />
         </div>
-</div>
+        
+        <div className="board-controls-section">
+          <button 
+            className="clearBoardBtn" 
+            onClick={handleClearBoard}
+          >
+            Clear Board
+          </button>
+          <button 
+            className="checkSolutionBtn" 
+            onClick={handleCheckSolution}
+          >
+            Check Solution
+          </button>
+        </div>
+      </div>
+      
+      <div className="right-section">
+        <div className="chatBox">
+          <div className="chatLog" ref={chatLogRef}>
+            {chatMessages.map((msg, index) => (
+              <div key={index}>
+                <strong style={{ color: msg.color || '#000' }}>{msg.user}:</strong>
+                <span className="message">{msg.message}</span>
+                <span className="time">
+                  {new Date(msg.time).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
 
-<div className="boardControls">
-  <button 
-    className="clearBoardBtn" 
-    onClick={handleClearBoard}
-  >
-    Clear Board
-  </button>
-  <button 
-    className="checkSolutionBtn" 
-    onClick={handleCheckSolution}
-  >
-    Check Solution
-  </button>
-</div>
+          <div className="chatInput">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  sendChatMessage();
+                }
+              }}
+              placeholder="Type to chat"
+            />
+          </div>
+        </div>
+        
+        <div className="players-section">
+          <div className="clientInfo">
+            <span>You are:</span>
+            <span style={{ color: clientInfo.color }}> {clientInfo.name}</span>
+          </div>
+
+          <h3 className="playerHeader">Connected Players:</h3>
+
+          <div className="playerList">
+            <ul>
+              {players.map((player, index) => (
+                <li key={index} style={{ color: player.color }}>
+                  {player.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  </div>
+);
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

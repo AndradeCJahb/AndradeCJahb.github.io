@@ -1,70 +1,52 @@
-# Getting Started with Create React App
+# Suduoku
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A real-time collaborative Sudoku game where multiple players can solve puzzles together.
 
-## Available Scripts
+![Suduoku Logo](./frontend/public/favicon.ico)
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- 🎮 Real-time collaborative puzzle solving
+- 💬 Live chat with other players
+- 🧩 Multiple puzzles with varying difficulty levels
+- 🔄 Automatic synchronization across all connected clients
+- ✅ Solution verification and error highlighting
+- 🎨 Unique player colors and auto-generated names
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Table of Contents
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Project Structure
+- Technologies
+- License
 
-### `npm test`
+## Project Structure
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+suduoku/
+├── backend/                    # Backend server code
+│   ├── server.js               # WebSocket server implementation
+│   └── sudokugames.db          # SQLite database
+├── frontend/                   # React frontend
+│   ├── public/                 # Static assets
+│   └── src/                    # Source code
+│       ├── index.js            # Main React application
+│       └── index.css           # Styles
+└── sudoku_conversion/          # Tools for puzzle conversion and import
+    ├── sudoku_sdx/             # Puzzle files in SDX format
+    └── sudoku_sdx_solutions/   # Solution files
+```
 
-### `npm run build`
+## Technologies
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Frontend**: React.js, CSS
+- **Backend**: Node.js, WebSocket (ws), SQLite
+- **Database**: SQLite3
+- **Deployment**: Ngrok (for development sharing)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## License
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+*Suduoku is a collaborative project created as a way to enjoy Sudoku with friends no matter where they are.*
