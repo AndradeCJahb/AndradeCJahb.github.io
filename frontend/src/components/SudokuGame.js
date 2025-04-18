@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import '../index.css';
 
-function Cell({ value, isEditable, onChange, isIncorrect, row, col, playerPositions, wsRef }) {
+function Cell({ value, isEditable, onChange, isIncorrect, row, col, playerPositions, wsRef, setFocusedCell }) {
   const handleChange = (event) => {
     const inputValue = event.target.value.slice(-1);
     if (/^[1-9]?$/.test(inputValue)) {
@@ -11,8 +11,9 @@ function Cell({ value, isEditable, onChange, isIncorrect, row, col, playerPositi
     }
   };
 
-  // Send position to server when cell is focused
+  // Send position to server and update focusedCell when cell is focused
   const handleFocus = () => {
+    setFocusedCell({ row, col }); // Update the focusedCell state
     if (wsRef && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ 
         type: 'sendPlayerPosition', 
@@ -49,11 +50,12 @@ function Cell({ value, isEditable, onChange, isIncorrect, row, col, playerPositi
       maxLength="2"
       className={cellClass}
       style={playerHighlights}
+      data-row={row}
+      data-col={col}
     />
   );
 }
-
-function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset, incorrectCells, playerPositions, wsRef }) {
+function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset, incorrectCells, playerPositions, wsRef, setFocusedCell }) {
   const transposedGridData = Array.from({ length: 3 }, (_, i) =>
     Array.from({ length: 3 }, (_, j) => gridData[j][i])
   );
@@ -63,15 +65,13 @@ function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset, incorrectCell
       {transposedGridData.map((row, rowIndex) => (
         <div key={rowIndex} className="grid-row">
           {row.map((cell, colIndex) => {
-            // Calculate the global row and column for this cell
             const globalRow = rowOffset + colIndex;
             const globalCol = colOffset + rowIndex;
-            
-            // Check if this cell is in the incorrect cells list
+
             const isIncorrect = incorrectCells.some(
-              cell => cell.row === globalRow && cell.col === globalCol
+              cell => cell.col === globalRow && cell.row === globalCol
             );
-            
+
             return (
               <Cell
                 key={colIndex}
@@ -80,11 +80,10 @@ function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset, incorrectCell
                 isIncorrect={isIncorrect}
                 row={globalRow}
                 col={globalCol}
-                onChange={(value) =>
-                  onCellChange(globalRow, globalCol, value)
-                }
+                onChange={(value) => onCellChange(globalRow, globalCol, value)}
                 playerPositions={playerPositions}
                 wsRef={wsRef}
+                setFocusedCell={setFocusedCell} // Pass setFocusedCell
               />
             );
           })}
@@ -94,7 +93,7 @@ function ThreeGrid({ gridData, onCellChange, rowOffset, colOffset, incorrectCell
   );
 }
 
-function FinalGrid({ gridData, onCellChange, incorrectCells, playerPositions, wsRef }) {
+function FinalGrid({ gridData, onCellChange, incorrectCells, playerPositions, wsRef, setFocusedCell }) {
   return (
     <div className="finalGrid">
       {Array.from({ length: 3 }, (_, gridRow) => (
@@ -111,6 +110,7 @@ function FinalGrid({ gridData, onCellChange, incorrectCells, playerPositions, ws
               incorrectCells={incorrectCells}
               playerPositions={playerPositions}
               wsRef={wsRef}
+              setFocusedCell={setFocusedCell} // Pass setFocusedCell
             />
           ))}
         </div>
@@ -128,6 +128,7 @@ if (!clientId) {
 
 function SudokuGame() {
   const { puzzleId: urlPuzzleId } = useParams();
+  const [focusedCell, setFocusedCell] = useState({ row: 0, col: 0 });
   const navigate = useNavigate();
   const [puzzleId, setPuzzleId] = useState(parseInt(urlPuzzleId, 10) || null);
   const [gridData, setGridData] = useState(Array(9).fill(Array(9).fill({ value: '', isEditable: true })));
@@ -160,19 +161,21 @@ function SudokuGame() {
       console.log('Connected to WebSocket server');
       setConnectionError(false);
       ws.current.send(JSON.stringify({ type: 'fetchIdentity', clientId: clientId}));
-      ws.current.send(JSON.stringify({ type: 'fetchPuzzle',clientId: clientId, puzzleId: puzzleId }));
+      ws.current.send(JSON.stringify({ type: 'fetchPuzzle', clientId: clientId, puzzleId: puzzleId }));
       ws.current.send(JSON.stringify({ type: 'fetchChat' , puzzleId: puzzleId }));
     };
 
     ws.current.onerror = (error) => {
+      
       console.error('WebSocket error:', error);
+      
       setConnectionError(true);
     };
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       
-      if (data.type === 'update') {
+      if (data.type === 'updatePuzzle') {
         // Update the grid with the new state from the server
         const updatedGrid = Array.from({ length: 9 }, (_, rowIndex) =>
           Array.from({ length: 9 }, (_, colIndex) => ({
@@ -187,16 +190,11 @@ function SudokuGame() {
         if (data.puzzleId) {
           setPuzzleId(data.puzzleId);
         }
-
-        if (data.client) {
-          setClientInfo(data.client); // Set the client's name and color
-        }
       } else if (data.type === 'updatePlayers') {
         setPlayers(data.players); // Update the list of connected players 
       } else if (data.type === 'updateIdentity') {
         setClientInfo(data.client);
-      }
-      else if (data.type === 'updateChat') {
+      } else if (data.type === 'updateChat') {
         setChatMessages(data.messages); // Load chat history
       } else if (data.type === 'updateIncorrectCells') {
         setIncorrectCells(data.incorrectCells);
@@ -254,6 +252,51 @@ function SudokuGame() {
     }
   };
 
+  const handleKeyDown = (event) => {
+    const { row, col } = focusedCell;
+
+      switch (event.key) {
+        case 'ArrowUp':
+          if (col > 0) setFocusedCell({ row: row , col: col - 1});
+          break;
+        case 'ArrowDown':
+          if (col < 8) setFocusedCell({ row: row , col: col + 1});
+          break;
+        case 'ArrowLeft':
+          if (row > 0) setFocusedCell({ row: row - 1, col: col });
+          break;
+        case 'ArrowRight':
+          if (row < 8) setFocusedCell({ row: row + 1, col: col });
+          break;
+          default:
+            break;
+        }
+    };
+
+  useEffect(() => {
+    const handleKeyPress = (event) => handleKeyDown(event);
+  
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  });
+  
+  useEffect(() => {
+    const { row, col } = focusedCell;
+    const targetCell = document.querySelector(
+      `input[data-row="${row}"][data-col="${col}"]`
+    );
+    if (targetCell) {
+      targetCell.focus();
+      // Ensure the cursor is always at the end of the input value
+      const valueLength = targetCell.value.length;
+      setTimeout(() => {
+        targetCell.setSelectionRange(valueLength, valueLength);
+      }, 0); // Use a timeout to ensure this runs after the focus event
+    }
+  }, [focusedCell]);
+  
   const handleCheckSolution = () => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ 
@@ -341,13 +384,14 @@ function SudokuGame() {
       <div className="app-container">
         <div className="left-section">
           <div className="board-section">
-            <FinalGrid 
-              gridData={gridData} 
-              onCellChange={handleCellChange}
-              incorrectCells={incorrectCells}
-              playerPositions={playerPositions}
-              wsRef={ws} 
-            />
+          <FinalGrid 
+            gridData={gridData} 
+            onCellChange={handleCellChange}
+            incorrectCells={incorrectCells}
+            playerPositions={playerPositions}
+            wsRef={ws} 
+            setFocusedCell={setFocusedCell} // Pass setFocusedCell
+          />
           </div>
           
           <div className="board-controls-section">

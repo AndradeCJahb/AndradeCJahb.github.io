@@ -81,7 +81,6 @@ public class WebSocketServer {
         System.out.println("Connection closed: " + session.getId());
         for(Player currPlayer : players.values()) {
             if (currPlayer.getSession().equals(session)) {
-                System.out.println("user " + currPlayer.getName() + " disconnected");
                 int puzzleId = currPlayer.getCurrentPuzzleId();
                 currPlayer.setCurrentPuzzleId(-1);
                 currPlayer.setSelectedCol(-1);
@@ -209,7 +208,6 @@ public class WebSocketServer {
         players.get(clientId).setCurrentPuzzleId(puzzleId);
         broadcastPlayers(puzzleId);
 
-        
         if (!boards.containsKey(puzzleId)) {
             boards.put(puzzleId, new Board(puzzleId));
         }
@@ -358,7 +356,6 @@ public class WebSocketServer {
     }
 
     private void handleSendCellChange(JSONObject jsonMessage) {
-        System.out.println("Received cell change: " + jsonMessage.toString());
         int puzzleId = jsonMessage.getInt("puzzleId");
         int row = jsonMessage.getInt("row");
         int col = jsonMessage.getInt("col");
@@ -371,24 +368,44 @@ public class WebSocketServer {
 
     private void handleSendClearBoard(JSONObject jsonMessage) {
         int puzzleId = jsonMessage.getInt("puzzleId");
-
         Board board = boards.get(puzzleId);
         board.clearBoard();
+
+        broadcastIncorrectCells(new ArrayList<int[]>(), puzzleId);
         broadcastBoard(puzzleId);
     }
 
     private void handleSendCheckSolution(JSONObject jsonMessage) {
         int puzzleId = jsonMessage.getInt("puzzleId");
         Board board = boards.get(puzzleId);
+        broadcastIncorrectCells(board.getIncorrectCells(), puzzleId);
+    }
 
-        List<int[]> incorrectCells = board.getIncorrectCells();
+    private void broadcastIncorrectCells(List<int[]> incorrectCells, int puzzleId) {
+        JSONArray incorrectCellsJson = new JSONArray();
+        for (int[] cell : incorrectCells) {
+            JSONObject cellJson = new JSONObject();
+            cellJson.put("row", cell[0]);
+            cellJson.put("col", cell[1]);
+            incorrectCellsJson.put(cellJson);
+        }
+
         JSONObject response = new JSONObject();
         response.put("type", "updateIncorrectCells");
-        response.put("incorrectCells", new JSONArray(incorrectCells));
+        response.put("incorrectCells", incorrectCellsJson);
         response.put("puzzleId", puzzleId);
 
-        System.out.println(response.toString());
-
+        for (Player currentPlayer : players.values()) {
+            Session currentSession = currentPlayer.getSession();
+            if (currentSession.isOpen() && currentPlayer.getCurrentPuzzleId() == puzzleId) {
+                try {
+                    currentSession.getBasicRemote().sendText(response.toString());
+                } catch (IOException e) {
+                    System.err.println("Error broadcasting incorrect cells: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }
 

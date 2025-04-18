@@ -13,13 +13,15 @@ import org.json.JSONObject;
 
 public class Board {
     private static final String DB_URL = "jdbc:sqlite:sudokugames.db";
+    private int puzzleId;
+    private String title;
+    private String difficulty;
     private Integer[][][] board;
     private Integer[][][] solution;
-    private int puzzleId;
 
     public Board(int puzzleId) {
         this.puzzleId = puzzleId;
-        String query = "SELECT title, sdx FROM puzzles WHERE id = ?";
+        String query = "SELECT title, difficulty, sdx FROM puzzles WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
             PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -28,6 +30,8 @@ public class Board {
 
             if (rs.next()) {
                 this.board = convertSDXToBoard(rs.getString("sdx"));
+                this.title = rs.getString("title");
+                this.difficulty = rs.getString("difficulty");
             } else {
                 this.board = new Integer[9][9][2];
             }
@@ -107,8 +111,9 @@ public class Board {
             rows.put(row);
         }
         
-        jsonResponse.put("type", "update");
+        jsonResponse.put("type", "updatePuzzle");
         jsonResponse.put("board", rows);
+        jsonResponse.put("title", this.title + "  " + this.difficulty.toUpperCase());
         return jsonResponse;
     }
 
