@@ -5,12 +5,20 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class Board {
-    private int[][][] board;
     private static final String DB_URL = "jdbc:sqlite:sudokugames.db";
+    private Integer[][][] board;
+    private Integer[][][] solution;
+    private int puzzleId;
 
     public Board(int puzzleId) {
+        this.puzzleId = puzzleId;
         String query = "SELECT title, sdx FROM puzzles WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
@@ -20,35 +28,131 @@ public class Board {
 
             if (rs.next()) {
                 this.board = convertSDXToBoard(rs.getString("sdx"));
-
-                
             } else {
-                this.board = new int[9][9][2];
-                System.out.println("No puzzle found with ID: " + puzzleId);
+                this.board = new Integer[9][9][2];
             }
         } catch (SQLException e) {
-            System.err.println("Error fetching chat history: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        String solutionQuery = "SELECT sdx_solution FROM puzzles WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+            PreparedStatement stmt = conn.prepareStatement(solutionQuery)) {
+            stmt.setInt(1, puzzleId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                this.solution = convertSDXToBoard(rs.getString("sdx_solution"));
+            } else {
+                this.solution = new Integer[9][9][2];
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    private int[][][] convertSDXToBoard(String sdx) {
-        String[] tokens = sdx.split(",");
-        int[][][] board = new int[9][9][2];
-
-        for (String token : tokens) {
-            if (token.contains('u')) {
-                
-            }
-        }
+    private Integer[][][] convertSDXToBoard(String sdx) {
+        String[] tokens = sdx.split(" ");
+        Integer[][][] board = new Integer[9][9][2];
+        
         for (int i = 0; i < 9; i++) {
-            String[] cells = rows[i].split("");
             for (int j = 0; j < 9; j++) {
-                board[i][j][0] = Integer.parseInt(cells[j]);
-                board[i][j][1] = 0;
+                String token = tokens[i * 9 + j];
+                if (token.charAt(0) == 'u') {
+                    board[i][j][0] = Integer.parseInt(token.substring(1));
+                    board[i][j][1] = 1; // 1 means uneditable
+                } else {
+                    board[i][j][0] = token.equals("0") ? null : Integer.valueOf(token);
+                    board[i][j][1] = 0; // 0 means editable
+                }
             }
         }
         return board;
+    }
+
+    private String convertBoardToSDX() {
+        StringBuilder sdx = new StringBuilder();
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (board[i][j][1] == 1) {
+                    sdx.append("u").append(board[i][j][0]).append(" ");
+                } else {
+                    sdx.append(board[i][j][0] == null ? "0" : board[i][j][0]).append(" ");
+                }
+            }
+        }
+        return sdx.toString().trim();
+    }
+
+    public JSONObject getBoardJSON() {
+        JSONObject jsonResponse = new JSONObject();
+        JSONArray rows = new JSONArray();
+        
+        // Convert the board to JSON format
+        for (int i = 0; i < 9; i++) {
+            JSONArray row = new JSONArray();
+            for (int j = 0; j < 9; j++) {
+                JSONObject cell = new JSONObject();
+                
+                // Convert null values to empty strings
+                String value = (board[i][j][0] == null) ? "" : board[i][j][0].toString();
+                // 0 means editable, 1 means uneditable
+                boolean isEditable = (board[i][j][1] == 0);
+                
+                cell.put("value", value);
+                cell.put("isEditable", isEditable);
+                
+                row.put(cell);
+            }
+            rows.put(row);
+        }
+        
+        jsonResponse.put("type", "update");
+        jsonResponse.put("board", rows);
+        return jsonResponse;
+    }
+
+    public void setCell(int row, int col, int value) {
+        board[row][col][0] = (value == 0) ? null : value;
+        updateDB();
+    }
+
+    public void clearBoard() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (board[i][j][1] == 0) { // Only clear editable cells
+                    board[i][j][0] = null;
+                }
+            }
+        }
+        updateDB();
+    }
+
+    private void updateDB() {
+        String sdx = convertBoardToSDX();
+        String query = "UPDATE puzzles SET sdx = ? WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+            PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, sdx);
+            stmt.setInt(2, this.puzzleId); // Assuming you want to update the puzzle with ID 1
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<int[]> getIncorrectCells() {
+        List<int[]> incorrectCells = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if(board[i][j][0] != null){
+                    if (!board[i][j][0].equals(solution[i][j][0])) { // Only check editable cells
+                        incorrectCells.add(new int[]{i, j});
+                    }
+                }
+            }
+        }
+        return incorrectCells;
     }
 }
 

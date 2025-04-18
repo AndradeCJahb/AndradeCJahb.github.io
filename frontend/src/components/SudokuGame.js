@@ -198,7 +198,7 @@ function SudokuGame() {
       }
       else if (data.type === 'updateChat') {
         setChatMessages(data.messages); // Load chat history
-      } else if (data.type === 'checkResult') {
+      } else if (data.type === 'updateIncorrectCells') {
         setIncorrectCells(data.incorrectCells);
       } else if (data.type === 'gameState') {
         // Handle combined game state update including player positions
@@ -257,7 +257,8 @@ function SudokuGame() {
   const handleCheckSolution = () => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ 
-        type: 'checkSolution'
+        type: 'sendCheckSolution',
+        puzzleId: puzzleId
       }));
     }
   };
@@ -271,6 +272,8 @@ function SudokuGame() {
           : cell
       )
     );
+
+    console.log(`Cell changed: row ${row}, col ${col}, value ${value}`);
   
     // Update local state
     setGridData(newGrid);
@@ -279,21 +282,12 @@ function SudokuGame() {
     setIncorrectCells(prev => prev.filter(cell => !(cell.row === row && cell.col === col)));
   
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      // Transpose the grid before sending to the server
-      const transposedGrid = Array.from({ length: 9 }, (_, rowIndex) =>
-        Array.from({ length: 9 }, (_, colIndex) => ({
-          value: newGrid[colIndex][rowIndex].value,
-          isEditable: newGrid[colIndex][rowIndex].isEditable,
-        }))
-      );
-    
-      // Send with properly transposed coordinates for changedCell
       ws.current.send(JSON.stringify({ 
         type: 'sendCellChange', 
-        board: transposedGrid,
         puzzleId: puzzleId,
-        row: row,
-        col: col
+        row: col,
+        col: row,
+        value: value | 0,
       }));
     }
   };
@@ -314,7 +308,8 @@ function SudokuGame() {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       // Notify the server to clear the board
       ws.current.send(JSON.stringify({ 
-        type: 'clearBoard'
+        type: 'sendClearBoard',
+        puzzleId: puzzleId
       }));
     }
   };

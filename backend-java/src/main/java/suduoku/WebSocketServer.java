@@ -62,6 +62,12 @@ public class WebSocketServer {
                 case "sendCellChange":
                     handleSendCellChange(jsonMessage);
                     break;
+                case "sendClearBoard":
+                    handleSendClearBoard(jsonMessage);
+                    break;
+                case "sendCheckSolution":
+                    handleSendCheckSolution(jsonMessage);
+                    break;
                 default:
                     System.out.println("Unknown request type: " + requestType);
             }
@@ -203,38 +209,29 @@ public class WebSocketServer {
         players.get(clientId).setCurrentPuzzleId(puzzleId);
         broadcastPlayers(puzzleId);
 
-        String query = "SELECT * FROM puzzles WHERE id = ?";
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-    
-            stmt.setInt(1, puzzleId);
-    
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    JSONObject puzzle = new JSONObject();
-                    puzzle.put("id", rs.getInt("id"));
-                    puzzle.put("title", rs.getString("title"));
-                    puzzle.put("difficulty", rs.getString("difficulty"));
-                    puzzle.put("status", rs.getString("status"));
-                    // Add more fields as necessary
-    
-                    JSONObject response = new JSONObject();
-                    response.put("type", "puzzle");
-                    response.put("puzzle", puzzle);
-    
-                    session.getBasicRemote().sendText(response.toString());
-                } else {
-                    System.err.println("No puzzle found with ID: " + puzzleId);
+        if (!boards.containsKey(puzzleId)) {
+            boards.put(puzzleId, new Board(puzzleId));
+        }
+
+        broadcastBoard(puzzleId);
+    }
+
+    private void broadcastBoard(int puzzleId) {
+        Board board = boards.get(puzzleId);
+        JSONObject boardJson = board.getBoardJSON();
+
+        for (Player currentPlayer : players.values()) {
+            Session currentSession = currentPlayer.getSession();
+
+            if (currentSession.isOpen() && currentPlayer.getCurrentPuzzleId() == puzzleId) {
+                try {
+                    currentSession.getBasicRemote().sendText(boardJson.toString());
+                } catch (IOException e) {
+                    System.err.println("Error broadcasting board: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
-    
-        } catch (SQLException e) {
-            System.err.println("Error fetching puzzle: " + e.getMessage());
-            e.printStackTrace();
-        } catch (IOException e) {
-            System.err.println("Error sending puzzle response: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -361,7 +358,37 @@ public class WebSocketServer {
     }
 
     private void handleSendCellChange(JSONObject jsonMessage) {
-        System.out.println(jsonMessage.toString());
+        System.out.println("Received cell change: " + jsonMessage.toString());
+        int puzzleId = jsonMessage.getInt("puzzleId");
+        int row = jsonMessage.getInt("row");
+        int col = jsonMessage.getInt("col");
+        int value = jsonMessage.getInt("value");
+
+        Board board = boards.get(puzzleId);
+        board.setCell(row, col, value);
+        broadcastBoard(puzzleId);
+    }
+
+    private void handleSendClearBoard(JSONObject jsonMessage) {
+        int puzzleId = jsonMessage.getInt("puzzleId");
+
+        Board board = boards.get(puzzleId);
+        board.clearBoard();
+        broadcastBoard(puzzleId);
+    }
+
+    private void handleSendCheckSolution(JSONObject jsonMessage) {
+        int puzzleId = jsonMessage.getInt("puzzleId");
+        Board board = boards.get(puzzleId);
+
+        List<int[]> incorrectCells = board.getIncorrectCells();
+        JSONObject response = new JSONObject();
+        response.put("type", "updateIncorrectCells");
+        response.put("incorrectCells", new JSONArray(incorrectCells));
+        response.put("puzzleId", puzzleId);
+
+        System.out.println(response.toString());
+
     }
 }
 
