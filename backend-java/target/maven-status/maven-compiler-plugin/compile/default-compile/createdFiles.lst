@@ -1,0 +1,3 @@
+suduoku\Player.class
+suduoku\WebSocketServer.class
+suduoku\SuduokuBackend.class

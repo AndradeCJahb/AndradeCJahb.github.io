@@ -11,8 +11,8 @@ const dbPath = path.join(__dirname, 'sudokugames.db');
 
 // Express app setup
 const app = express();
-// Update your CORS configuration (around line 11-14)
-// Replace lines 11-16 with:
+
+
 app.use(cors({
   origin: '*', // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

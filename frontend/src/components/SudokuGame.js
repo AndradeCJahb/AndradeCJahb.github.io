@@ -15,8 +15,9 @@ function Cell({ value, isEditable, onChange, isIncorrect, row, col, playerPositi
   const handleFocus = () => {
     if (wsRef && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ 
-        type: 'cellSelection', 
-        position: { row, col } 
+        type: 'sendPlayerPosition', 
+        position: { row, col },
+        clientId: clientId
       }));
     }
   };
@@ -150,22 +151,18 @@ function SudokuGame() {
   }, [chatMessages]);
 
   useEffect(() => {
-    // Use the correct WebSocket path with wss:// for secure connections
-    const wsUrl = 'wss://da6d-2601-1c2-4503-61b0-62-7a49-5af4-c336.ngrok-free.app/ws';
+    const wsUrl = 'ws://localhost:8080/ws';
     console.log(`Connecting to WebSocket at ${wsUrl}`);
     
     ws.current = new WebSocket(wsUrl);
 
-  ws.current.onopen = () => {
-    console.log('Connected to WebSocket server');
-    setConnectionError(false);
-    ws.current.send(JSON.stringify({ 
-      type: 'identify', 
-      clientId,
-      puzzleId: puzzleId
-    }));
-    ws.current.send(JSON.stringify({ type: 'loadChat' }));
-  };
+    ws.current.onopen = () => {
+      console.log('Connected to WebSocket server');
+      setConnectionError(false);
+      ws.current.send(JSON.stringify({ type: 'fetchIdentity', clientId: clientId}));
+      ws.current.send(JSON.stringify({ type: 'fetchPuzzle',clientId: clientId, puzzleId: puzzleId }));
+      ws.current.send(JSON.stringify({ type: 'fetchChat' , puzzleId: puzzleId }));
+    };
 
     ws.current.onerror = (error) => {
       console.error('WebSocket error:', error);
@@ -194,9 +191,12 @@ function SudokuGame() {
         if (data.client) {
           setClientInfo(data.client); // Set the client's name and color
         }
-      } else if (data.type === 'players') {
+      } else if (data.type === 'updatePlayers') {
         setPlayers(data.players); // Update the list of connected players 
-      } else if (data.type === 'chatHistory') {
+      } else if (data.type === 'updateIdentity') {
+        setClientInfo(data.client);
+      }
+      else if (data.type === 'updateChat') {
         setChatMessages(data.messages); // Load chat history
       } else if (data.type === 'checkResult') {
         setIncorrectCells(data.incorrectCells);
@@ -249,7 +249,7 @@ function SudokuGame() {
         puzzleId: puzzleId || 1,
       };
       
-      ws.current.send(JSON.stringify({ type: 'chat', message }));
+      ws.current.send(JSON.stringify({ type: 'sendChat', message }));
       setChatInput('');
     }
   };
@@ -289,12 +289,11 @@ function SudokuGame() {
     
       // Send with properly transposed coordinates for changedCell
       ws.current.send(JSON.stringify({ 
-        type: 'update', 
+        type: 'sendCellChange', 
         board: transposedGrid,
-        changedCell: { 
-          row: row,
-          col: col
-        }
+        puzzleId: puzzleId,
+        row: row,
+        col: col
       }));
     }
   };
